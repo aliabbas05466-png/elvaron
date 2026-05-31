@@ -54,53 +54,42 @@ export function CartDrawer() {
     }
   }
 
-  const handleConfirmOrder = async () => {
-    try {
-      // Validate form first
-      if (!validateForm()) {
-        return
-      }
-
-      // Send order to email
-      const orderPayload = {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        city: formData.city,
-        address: formData.address,
-        cart: cart.map(item => ({
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-        })),
-        total: total,
-      }
-
-      console.log('[v0] Submitting order:', orderPayload)
-
-      const response = await fetch('/api/send-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderPayload),
-      })
-
-      console.log('[v0] Order API response status:', response.status)
-      const responseData = await response.json()
-      console.log('[v0] Order API response:', responseData)
-
-      if (response.ok) {
-        console.log('[v0] Order submitted successfully')
-        alert('✓ Order submitted successfully! Email confirmation has been sent.')
-        clearCart()
-        handleClose()
-      } else {
-        console.error('[v0] Order submission failed:', responseData)
-        alert('⚠ Error: ' + (responseData.message || responseData.error || responseData.details || 'Failed to submit order'))
-      }
-    } catch (error) {
-      console.error('[v0] Error sending order:', error)
-      alert('❌ Error submitting order. Check your internet connection and try again.')
+  const handleConfirmOrder = () => {
+    // Validate form first
+    if (!validateForm()) {
+      return
     }
+
+    // Create order message for WhatsApp
+    const cartDetails = cart
+      .map((item) => `${item.name} x${item.quantity} = ₨${(item.price * item.quantity).toLocaleString()}`)
+      .join('\n')
+
+    const message = `
+*ELVARON ORDER*
+
+*Customer Details:*
+Name: ${formData.name}
+Phone: ${formData.phone}
+City: ${formData.city}
+Address: ${formData.address}
+Email: ${formData.email}
+
+*Products Ordered:*
+${cartDetails}
+
+*Total Amount: ₨${total.toLocaleString()}*
+
+Please confirm this order.
+    `.trim()
+
+    // Open WhatsApp with pre-filled message
+    const whatsappLink = `https://wa.me/923378027158?text=${encodeURIComponent(message)}`
+    window.open(whatsappLink, '_blank')
+
+    // Clear cart after sending
+    clearCart()
+    handleClose()
   }
 
   if (!isOpen) return null
