@@ -17,6 +17,8 @@ export function CartDrawer() {
     address: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const deliveryCharge = 180
+  const totalWithDelivery = total + deliveryCharge
 
   const handleClose = () => {
     setIsOpen(false)
@@ -78,7 +80,10 @@ Email: ${formData.email}
 *Products Ordered:*
 ${cartDetails}
 
-*Total Amount: ₨${total.toLocaleString()}*
+*Order Breakdown:*
+Subtotal: ₨${total.toLocaleString()}
+Delivery Charges: ₨${deliveryCharge}
+*Total Amount: ₨${totalWithDelivery.toLocaleString()}*
 
 Please confirm this order.
     `.trim()
@@ -183,9 +188,19 @@ Please confirm this order.
 
             {cart.length > 0 && (
               <div className="p-6 border-t border-border">
-                <div className="flex justify-between text-lg mb-6">
-                  <span className="text-muted-foreground">Total</span>
-                  <span className="font-serif text-2xl text-primary">₨{total}</span>
+                <div className="space-y-2 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>₨{total}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Delivery Charges</span>
+                    <span>₨{deliveryCharge}</span>
+                  </div>
+                  <div className="flex justify-between text-lg border-t border-border pt-2">
+                    <span className="text-muted-foreground">Total</span>
+                    <span className="font-serif text-2xl text-primary">₨{totalWithDelivery}</span>
+                  </div>
                 </div>
                 <button 
                   onClick={() => setStep("details")}
@@ -292,9 +307,19 @@ Please confirm this order.
                       <span>₨{item.price * item.quantity}</span>
                     </div>
                   ))}
-                  <div className="pt-3 border-t border-border flex justify-between font-semibold">
-                    <span>Total Bill</span>
-                    <span className="text-primary text-xl">₨{total}</span>
+                  <div className="pt-3 border-t border-border space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>₨{total}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Delivery Charges</span>
+                      <span>₨{deliveryCharge}</span>
+                    </div>
+                    <div className="flex justify-between font-semibold text-lg pt-2 border-t border-border">
+                      <span>Total</span>
+                      <span className="text-primary">₨{totalWithDelivery}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -337,8 +362,16 @@ Please confirm this order.
                 <span>{formData.city}</span>
               </div>
               <div className="pt-2 border-t border-border flex justify-between font-semibold">
+                <span>Subtotal</span>
+                <span className="text-primary">₨{total}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Delivery Charges</span>
+                <span>₨{deliveryCharge}</span>
+              </div>
+              <div className="pt-2 border-t border-border flex justify-between font-semibold text-lg">
                 <span>Total Paid</span>
-                <span className="text-primary text-lg">₨{total}</span>
+                <span className="text-primary">₨{totalWithDelivery}</span>
               </div>
             </div>
 
