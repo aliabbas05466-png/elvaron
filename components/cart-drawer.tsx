@@ -17,8 +17,6 @@ export function CartDrawer() {
     address: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const deliveryCharge = 180
-  const totalWithDelivery = total + deliveryCharge
 
   const handleClose = () => {
     setIsOpen(false)
@@ -56,45 +54,53 @@ export function CartDrawer() {
     }
   }
 
-  const handleConfirmOrder = () => {
-    // Validate form first
-    if (!validateForm()) {
-      return
+  const handleConfirmOrder = async () => {
+    try {
+      // Validate form first
+      if (!validateForm()) {
+        return
+      }
+
+      // Send order to email
+      const orderPayload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        city: formData.city,
+        address: formData.address,
+        cart: cart.map(item => ({
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        total: total,
+      }
+
+      console.log('[v0] Submitting order:', orderPayload)
+
+      const response = await fetch('/api/send-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload),
+      })
+
+      console.log('[v0] Order API response status:', response.status)
+      const responseData = await response.json()
+      console.log('[v0] Order API response:', responseData)
+
+      if (response.ok) {
+        console.log('[v0] Order submitted successfully')
+        alert('✓ Order submitted successfully! Email confirmation has been sent.')
+        clearCart()
+        handleClose()
+      } else {
+        console.error('[v0] Order submission failed:', responseData)
+        alert('⚠ Error: ' + (responseData.message || responseData.error || responseData.details || 'Failed to submit order'))
+      }
+    } catch (error) {
+      console.error('[v0] Error sending order:', error)
+      alert('❌ Error submitting order. Check your internet connection and try again.')
     }
-
-    // Create order message for WhatsApp
-    const cartDetails = cart
-      .map((item) => `${item.name} x${item.quantity} = ₨${(item.price * item.quantity).toLocaleString()}`)
-      .join('\n')
-
-    const message = `
-*ELVARON ORDER*
-
-*Customer Details:*
-Name: ${formData.name}
-Phone: ${formData.phone}
-City: ${formData.city}
-Address: ${formData.address}
-Email: ${formData.email}
-
-*Products Ordered:*
-${cartDetails}
-
-*Order Breakdown:*
-Subtotal: ₨${total.toLocaleString()}
-Delivery Charges: ₨${deliveryCharge}
-*Total Amount: ₨${totalWithDelivery.toLocaleString()}*
-
-Please confirm this order.
-    `.trim()
-
-    // Open WhatsApp with pre-filled message
-    const whatsappLink = `https://wa.me/923378027158?text=${encodeURIComponent(message)}`
-    window.open(whatsappLink, '_blank')
-
-    // Clear cart after sending
-    clearCart()
-    handleClose()
   }
 
   if (!isOpen) return null
@@ -188,19 +194,9 @@ Please confirm this order.
 
             {cart.length > 0 && (
               <div className="p-6 border-t border-border">
-                <div className="space-y-2 mb-6">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>₨{total}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Delivery Charges</span>
-                    <span>₨{deliveryCharge}</span>
-                  </div>
-                  <div className="flex justify-between text-lg border-t border-border pt-2">
-                    <span className="text-muted-foreground">Total</span>
-                    <span className="font-serif text-2xl text-primary">₨{totalWithDelivery}</span>
-                  </div>
+                <div className="flex justify-between text-lg mb-6">
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="font-serif text-2xl text-primary">₨{total}</span>
                 </div>
                 <button 
                   onClick={() => setStep("details")}
@@ -307,19 +303,9 @@ Please confirm this order.
                       <span>₨{item.price * item.quantity}</span>
                     </div>
                   ))}
-                  <div className="pt-3 border-t border-border space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span>₨{total}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Delivery Charges</span>
-                      <span>₨{deliveryCharge}</span>
-                    </div>
-                    <div className="flex justify-between font-semibold text-lg pt-2 border-t border-border">
-                      <span>Total</span>
-                      <span className="text-primary">₨{totalWithDelivery}</span>
-                    </div>
+                  <div className="pt-3 border-t border-border flex justify-between font-semibold">
+                    <span>Total Bill</span>
+                    <span className="text-primary text-xl">₨{total}</span>
                   </div>
                 </div>
               </div>
@@ -362,16 +348,8 @@ Please confirm this order.
                 <span>{formData.city}</span>
               </div>
               <div className="pt-2 border-t border-border flex justify-between font-semibold">
-                <span>Subtotal</span>
-                <span className="text-primary">₨{total}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Delivery Charges</span>
-                <span>₨{deliveryCharge}</span>
-              </div>
-              <div className="pt-2 border-t border-border flex justify-between font-semibold text-lg">
                 <span>Total Paid</span>
-                <span className="text-primary">₨{totalWithDelivery}</span>
+                <span className="text-primary text-lg">₨{total}</span>
               </div>
             </div>
 
