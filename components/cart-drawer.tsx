@@ -379,7 +379,7 @@ Please confirm this order.
               onClick={handleConfirmOrder}
               className="w-full bg-gradient-to-br from-primary to-yellow-400 text-primary-foreground py-4 rounded-full text-lg font-semibold shadow-[0_20px_40px_rgba(212,175,55,0.4)] transition-all duration-400 hover:-translate-y-1 hover:shadow-[0_30px_60px_rgba(212,175,55,0.5)]"
             >
-              Continue Shopping
+              Order Now on WhatsApp
             </button>
           </div>
         )}
