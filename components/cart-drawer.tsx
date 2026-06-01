@@ -1,8 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { X, Minus, Plus, ShoppingBag, ArrowLeft, CheckCircle } from "lucide-react"
+import { X, Minus, Plus, ShoppingBag, ArrowLeft, CheckCircle, MessageCircle } from "lucide-react"
 import { useCart } from "@/components/cart-provider"
+
+// Your WhatsApp Business Number
+const WHATSAPP_NUMBER = "+923378027158"
 
 type Step = "cart" | "details" | "confirmation"
 
@@ -11,7 +14,6 @@ export function CartDrawer() {
   const [step, setStep] = useState<Step>("cart")
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
     phone: "",
     city: "",
     address: "",
@@ -22,7 +24,7 @@ export function CartDrawer() {
     setIsOpen(false)
     setTimeout(() => {
       setStep("cart")
-      setFormData({ name: "", email: "", phone: "", city: "", address: "" })
+      setFormData({ name: "", phone: "", city: "", address: "" })
       setErrors({})
     }, 300)
   }
@@ -30,11 +32,6 @@ export function CartDrawer() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
     if (!formData.name.trim()) newErrors.name = "Name is required"
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required"
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format"
-    }
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone is required"
     } else if (!/^[\d\s\-+()]{10,}$/.test(formData.phone)) {
@@ -54,6 +51,16 @@ export function CartDrawer() {
     }
   }
 
+  const generateWhatsAppMessage = () => {
+    const orderItems = cart
+      .map((item) => `• ${item.name} (x${item.quantity}) - ₨${item.price * item.quantity}`)
+      .join("%0A")
+
+    const message = `*NEW ORDER* 📦%0A%0A*Customer Details:*%0AName: ${formData.name}%0APhone: ${formData.phone}%0ACity: ${formData.city}%0AAddress: ${formData.address}%0A%0A*Items Ordered:*%0A${orderItems}%0A%0A*Total Amount: ₨${total}*%0A%0APlease confirm this order.`
+
+    return message
+  }
+
   const handleConfirmOrder = async () => {
     try {
       // Validate form first
@@ -61,45 +68,19 @@ export function CartDrawer() {
         return
       }
 
-      // Send order to email
-      const orderPayload = {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        city: formData.city,
-        address: formData.address,
-        cart: cart.map(item => ({
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-        })),
-        total: total,
-      }
+      // Generate WhatsApp message and open WhatsApp
+      const whatsappMessage = generateWhatsAppMessage()
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER.replace(/[^0-9]/g, "")}?text=${whatsappMessage}`
 
-      console.log('[v0] Submitting order:', orderPayload)
+      // Open WhatsApp
+      window.open(whatsappUrl, "_blank")
 
-      const response = await fetch('/api/send-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderPayload),
-      })
-
-      console.log('[v0] Order API response status:', response.status)
-      const responseData = await response.json()
-      console.log('[v0] Order API response:', responseData)
-
-      if (response.ok) {
-        console.log('[v0] Order submitted successfully')
-        alert('✓ Order submitted successfully! Email confirmation has been sent.')
-        clearCart()
-        handleClose()
-      } else {
-        console.error('[v0] Order submission failed:', responseData)
-        alert('⚠ Error: ' + (responseData.message || responseData.error || responseData.details || 'Failed to submit order'))
-      }
+      // Clear cart and close drawer
+      clearCart()
+      handleClose()
     } catch (error) {
-      console.error('[v0] Error sending order:', error)
-      alert('❌ Error submitting order. Check your internet connection and try again.')
+      console.error('[v0] Error opening WhatsApp:', error)
+      alert('Error opening WhatsApp. Please try again.')
     }
   }
 
@@ -230,22 +211,6 @@ export function CartDrawer() {
                   {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
                 </div>
 
-                {/* Email */}
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className={`w-full px-4 py-3 bg-input border rounded-xl outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 ${errors.email ? 'border-destructive' : 'border-border'}`}
-                    placeholder="Enter your email"
-                  />
-                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                </div>
-
                 {/* Phone */}
                 <div className="space-y-2">
                   <label htmlFor="phone" className="block text-sm font-medium text-muted-foreground">
@@ -331,7 +296,7 @@ export function CartDrawer() {
             <h3 className="font-serif text-2xl mb-3">Thank You!</h3>
             <p className="text-muted-foreground mb-2">Your order has been placed successfully.</p>
             <p className="text-sm text-muted-foreground mb-8">
-              We&apos;ll send a confirmation email to <span className="text-primary">{formData.email}</span>
+              Order will be sent to your WhatsApp. We&apos;ll confirm within 2 hours.
             </p>
             
             <div className="w-full p-4 bg-secondary/50 rounded-xl space-y-2 text-left mb-8">
@@ -355,9 +320,10 @@ export function CartDrawer() {
 
             <button 
               onClick={handleConfirmOrder}
-              className="w-full bg-gradient-to-br from-primary to-yellow-400 text-primary-foreground py-4 rounded-full text-lg font-semibold shadow-[0_20px_40px_rgba(212,175,55,0.4)] transition-all duration-400 hover:-translate-y-1 hover:shadow-[0_30px_60px_rgba(212,175,55,0.5)]"
+              className="w-full bg-gradient-to-br from-green-500 to-green-600 text-white py-4 rounded-full text-lg font-semibold shadow-[0_20px_40px_rgba(34,197,94,0.4)] transition-all duration-400 hover:-translate-y-1 hover:shadow-[0_30px_60px_rgba(34,197,94,0.5)] flex items-center justify-center gap-2"
             >
-              Continue Shopping
+              <MessageCircle className="w-5 h-5" />
+              Place Order
             </button>
           </div>
         )}
