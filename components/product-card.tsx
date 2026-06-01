@@ -8,6 +8,7 @@ interface Product {
   id: string
   name: string
   description: string
+  price: number
   price100ml?: number
   price50ml?: number
   price30ml?: number
@@ -60,11 +61,16 @@ export function ProductCard({ product }: ProductCardProps) {
   }
 
   const handleAddToCart = () => {
+    const price = getPrice()
+    if (price === undefined) {
+      console.error("Price is not available for selected size")
+      return
+    }
     const cartItem = {
       ...product,
       id: `${product.id}-${selectedSize}`,
       name: `${product.name} - ${selectedSize}`,
-      price: getPrice(),
+      price: price,
     }
     addToCart(cartItem)
   }
